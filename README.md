@@ -28,7 +28,7 @@ BOT_TOKEN: xxxx:xxxxxxxxxxxx
 ADMIN_ID: 管理员ID
 #默认是否上传到电报 true 或者 false
 UP_TELEGRAM: true
-#aria2c 设置
+#aria2c 设置（没有最好也输入空串，否则报错）
 RPC_SECRET: xxxxxxx
 RPC_URL: xxxxxx:6800/jsonrpc
 
@@ -54,19 +54,19 @@ git clone https://github.com/jw-star/aria2bot.git
 删除容器（如果容器存在）
 
 ```
-docker compose down
+docker-compose down
 ```
 
 后台启动
 
 ```yaml
-docker compose up -d --build
+docker-compose up -d --build
 ```
 
 查看日志
 
 ```yaml
-docker compose logs -f --tail=4000
+docker-compose logs -f --tail=4000
 ```
 
 ### 自行安装aria2
