@@ -7,8 +7,7 @@ services:
     restart: always
     volumes:
       - ./db:/app/db
-      - /root/downloads:/root/downloads
-      - /qqqq:/qqqq
+      - /tmp/downloads:/root/downloads    # 修改为你要挂载的下载路径
     build: .
     environment:
       TZ: Asia/Shanghai

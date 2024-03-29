@@ -12,7 +12,7 @@ import aiohttp
 import websockets
 
 from configer import ADMIN_ID, UP_TELEGRAM, RPC_URL, RPC_SECRET
-from util import get_file_name, imgCoverFromFile, progress, byte2_readable, hum_convert
+from util import get_file_name, img_cover_from_file, progress, byte2_readable, hum_convert
 
 
 # logging.basicConfig(
@@ -67,7 +67,9 @@ class AsyncAria2Client:
         params_ = self.get_rpc_body(method, params)
         return json.dumps(params_)
 
-    def get_rpc_body(self, method, params=[]):
+    def get_rpc_body(self, method, params=None):
+        if params is None:
+            params = []
         params_ = {
             'jsonrpc': '2.0',
             'id': str(uuid.uuid4()),
@@ -125,30 +127,30 @@ class AsyncAria2Client:
     async def on_download_start(self, result):
         gid = result['params'][0]['gid']
         print(f"===========下载 开始 任务id:{gid}")
-        tellStatus = await self.tell_status(gid)
-        file_name = get_file_name(tellStatus)
-        dir = tellStatus["dir"]
+        tell_status = await self.tell_status(gid)
+        file_name = get_file_name(tell_status)
+        dir = tell_status["dir"]
         if self.bot:
             msg = await self.bot.send_message(ADMIN_ID,
                                               f'{file_name} 任务已经开始下载... \n 对应路径: {dir}',
                                               parse_mode='html')
-            asyncio.create_task(self.check_download_progress(gid, msg))
-            print('轮训进度')
+            await asyncio.create_task(self.check_download_progress(gid, msg))
+            print('轮询进度')
 
     async def check_download_progress(self, gid, msg):
         try:
             while True:
                 task = await self.tell_status(gid)
-                completedLength = task['completedLength']
-                totalLength = task['totalLength']
-                downloadSpeed = task['downloadSpeed']
+                completed_length = task['completedLength']
+                total_length = task['totalLength']
+                download_speed = task['downloadSpeed']
                 status = task['status']
                 file_name = get_file_name(task)
                 if file_name == '':
                     continue
-                size = byte2_readable(int(totalLength))
-                speed = hum_convert(int(downloadSpeed))
-                prog = progress(int(totalLength), int(completedLength))
+                size = byte2_readable(int(total_length))
+                speed = hum_convert(int(download_speed))
+                prog = progress(int(total_length), int(completed_length))
                 if status != 'complete':
                     msg = await self.bot.edit_message(msg,
                                                       f'{file_name} 下载中... \n '
@@ -156,7 +158,7 @@ class AsyncAria2Client:
                                                       f'进度: {prog}\n'
                                                       f'大小: {size}\n'
                                                       f'速度: {speed}/s\n'
-                                                      f'时间：{ datetime.now()}',
+                                                      f'时间：{datetime.now()}',
                                                       parse_mode='html')
                     await asyncio.sleep(3)
                 else:
@@ -169,8 +171,8 @@ class AsyncAria2Client:
     async def on_download_complete(self, result):
         gid = result['params'][0]['gid']
         print(f"===========下载 完成 任务id:{gid}")
-        tellStatus = await self.tell_status(gid)
-        files = tellStatus['files']
+        tell_status = await self.tell_status(gid)
+        files = tell_status['files']
         for file in files:
             path = file['path']
             if self.bot:
@@ -194,7 +196,6 @@ class AsyncAria2Client:
                             self.progress_cache[gid] = new_progress
                             await self.bot.edit_message(msg, path + f' \n上传中 : {formatted_progress}')
 
-
                     try:
                         # 单独处理mp4上传
                         # 创建带有额外参数部分函数
@@ -202,7 +203,7 @@ class AsyncAria2Client:
                         if '.mp4' in path:
                             pat, filename = os.path.split(path)
                             # 截图
-                            await imgCoverFromFile(path, path + '.jpg')
+                            await img_cover_from_file(path, path + '.jpg')
                             await self.bot.send_file(ADMIN_ID,
                                                      path,
                                                      thumb=pat + '/' + filename + '.jpg',
@@ -227,22 +228,22 @@ class AsyncAria2Client:
     async def on_download_pause(self, result):
         gid = result['params'][0]['gid']
         print(f"===========下载 暂停 任务id:{gid}")
-        tellStatus = await self.tell_status(gid)
-        filename = get_file_name(tellStatus)
+        tell_status = await self.tell_status(gid)
+        filename = get_file_name(tell_status)
         if self.bot:
             await self.bot.send_message(ADMIN_ID, f'{filename} 任务已经成功暂停')
 
     async def on_download_error(self, result):
         gid = result['params'][0]['gid']
-        tellStatus = await self.tell_status(gid)
-        errorCode = tellStatus['errorCode']
-        errorMessage = tellStatus['errorMessage']
-        print(f'===========下载 错误 任务id:{gid} 错误码: {errorCode} 错误信息{errorMessage}')
+        tell_status = await self.tell_status(gid)
+        error_code = tell_status['errorCode']
+        error_message = tell_status['errorMessage']
+        print(f'===========下载 错误 任务id:{gid} 错误码: {error_code} 错误信息{error_message}')
         if self.bot:
-            if errorCode == '12':
+            if error_code == '12':
                 await self.bot.send_message(ADMIN_ID, '任务已经在下载,可以删除任务后重新添加')
             else:
-                await self.bot.send_message(ADMIN_ID, errorMessage)
+                await self.bot.send_message(ADMIN_ID, error_message)
 
     async def tell_stopped(self, offset: int, num: int):
         params = [

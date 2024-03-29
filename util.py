@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 import ffmpy3
 
 
-async def imgCoverFromFile(input, output):
+async def img_cover_from_file(input, output):
     # ffmpeg -i 001.jpg -vf 'scale=320:320'  001_1.jpg
     ff = ffmpy3.FFmpeg(
         inputs={input: None},
@@ -37,25 +37,26 @@ def progress(total_length, completed_length):
 
 
 def byte2_readable(size):
-    '''
+    """
     auth: wangshengke@kedacom.com ；科达柯大侠
     递归实现，精确为最大单位值 + 小数点后三位
-    '''
+    """
 
-    def strofsize(integer, remainder, level):
+    def str_of_size(integer, remainder, level):
         if integer >= 1024:
             remainder = integer % 1024
             integer //= 1024
             level += 1
-            return strofsize(integer, remainder, level)
+            return str_of_size(integer, remainder, level)
         else:
             return integer, remainder, level
 
     units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
-    integer, remainder, level = strofsize(size, 0, 0)
+    integer, remainder, level = str_of_size(size, 0, 0)
     if level + 1 > len(units):
         level = -1
     return ('{}.{:>03d}{}'.format(integer, remainder, units[level]))
+
 
 def hum_convert(value):
     units = ["B", "KB", "MB", "GB", "TB", "PB"]

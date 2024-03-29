@@ -6,10 +6,9 @@ import re
 import shutil
 from typing import Any
 
-import python_socks
-
-from telethon import TelegramClient, events, Button
 import coloredlogs
+import python_socks
+from telethon import TelegramClient, events, Button
 from telethon.tl.functions.bots import SetBotCommandsRequest
 from telethon.tl.types import BotCommand, BotCommandScopeDefault, Message
 
@@ -170,7 +169,7 @@ async def remove_task(event):
     for task in tasks:
         temp_task.append(task)
     # 正在等待的任务
-    tasks = await  client.tell_waiting(0, 50)
+    tasks = await client.tell_waiting(0, 50)
     for task in tasks:
         temp_task.append(task)
     if len(temp_task) == 0:
@@ -192,9 +191,9 @@ async def stop_task(event):
         return
     buttons = []
     for task in tasks:
-        fileName = get_file_name(task)
+        file_name = get_file_name(task)
         gid = task['gid']
-        buttons.append([Button.inline(fileName, 'pause-task.' + gid)])
+        buttons.append([Button.inline(file_name, 'pause-task.' + gid)])
 
     await event.respond('请选择要暂停⏸️的任务', parse_mode='html', buttons=buttons)
 
@@ -206,17 +205,17 @@ async def downloading(event):
         return
     send_msg = ''
     for task in tasks:
-        completedLength = task['completedLength']
-        totalLength = task['totalLength']
-        downloadSpeed = task['downloadSpeed']
-        fileName = get_file_name(task)
-        if fileName == '':
+        completed_length = task['completedLength']
+        total_length = task['totalLength']
+        download_speed = task['downloadSpeed']
+        file_name = get_file_name(task)
+        if file_name == '':
             continue
-        prog = progress(int(totalLength), int(completedLength))
-        size = byte2_readable(int(totalLength))
-        speed = hum_convert(int(downloadSpeed))
+        prog = progress(int(total_length), int(completed_length))
+        size = byte2_readable(int(total_length))
+        speed = hum_convert(int(download_speed))
 
-        send_msg = send_msg + '任务名称: <b>' + fileName + '</b>\n进度: ' + prog + '\n大小: ' + size + '\n速度: ' + speed + '/s\n\n'
+        send_msg = send_msg + '任务名称: <b>' + file_name + '</b>\n进度: ' + prog + '\n大小: ' + size + '\n速度: ' + speed + '/s\n\n'
     if send_msg == '':
         await event.respond('个别任务无法识别名称，请使用aria2Ng查看', parse_mode='html')
         return
@@ -260,14 +259,14 @@ async def stoped(event):
 
 
 @events.register(events.CallbackQuery)
-async def BotCallbackHandler(event):
+async def bot_call_back_handler(event):
     d = str(event.data, encoding="utf-8")
-    [type, gid] = d.split('.', 1)
-    if type == 'pause-task':
+    [task_type, gid] = d.split('.', 1)
+    if task_type == 'pause-task':
         await client.pause(gid)
-    elif type == 'unpause-task':
+    elif task_type == 'unpause-task':
         await client.unpause(gid)
-    elif type == 'del-task':
+    elif task_type == 'del-task':
         data = await client.remove(gid)
         if 'error' in data:
             await bot.send_message(ADMIN_ID, data['error']['message'])
@@ -297,7 +296,7 @@ def get_menu():
 # 入口
 async def main():
     await client.connect()
-    bot.add_event_handler(BotCallbackHandler)
+    bot.add_event_handler(bot_call_back_handler)
     bot_me = await bot.get_me()
     commands = [
         BotCommand(command="start", description='开始使用'),
