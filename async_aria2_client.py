@@ -111,7 +111,8 @@ class AsyncAria2Client:
         data = await self.post_body(rpc_body)
         return data['result']
 
-    async def post_body(self, rpc_body):
+    @staticmethod
+    async def post_body(rpc_body):
         async with aiohttp.ClientSession() as session:
             async with session.post(f'http://{RPC_URL}', json=rpc_body) as response:
                 return await response.json()

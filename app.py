@@ -19,6 +19,7 @@ from util import get_file_name, progress, byte2_readable, hum_convert
 coloredlogs.install(level='INFO')
 log = logging.getLogger('bot')
 
+RPC_SECRET = RPC_SECRET if RPC_SECRET is not None else ''   # ?: 检查为空则赋值为空字符串
 proxy = (python_socks.ProxyType.HTTP, PROXY_IP, PROXY_PORT) if PROXY_IP is not None else None
 bot = TelegramClient('./db/bot', API_ID, API_HASH, proxy=proxy).start(bot_token=BOT_TOKEN)
 client = AsyncAria2Client(RPC_SECRET, f'ws://{RPC_URL}', bot)
@@ -79,10 +80,10 @@ async def send_welcome(event):
     if text == '⬇️正在下载':
         await downloading(event)
         return
-    elif text == '⌛️ 正在等待':
+    elif text == '⌛️正在等待':
         await waiting(event)
         return
-    elif text == '✅ 已完成/停止':
+    elif text == '✅已完成/停止':
         await stoped(event)
         return
     elif text == '⏸️暂停任务':
@@ -91,11 +92,14 @@ async def send_welcome(event):
     elif text == '▶️恢复任务':
         await unpause_task(event)
         return
-    elif text == '❌ 删除任务':
+    elif text == '❌删除任务':
         await remove_task(event)
         return
-    elif text == '❌ ❌ 清空已完成/停止':
-        await remove_all(event)
+    # elif text == '❌❌清空已完成/停止':
+    #     await remove_all(event)
+    #     return
+    elif text == '🧹清空已完成/停止':
+        await clear_all(event)
         return
     elif text == '关闭键盘':
         await event.reply("键盘已关闭,/menu 开启键盘", buttons=Button.clear())
@@ -148,6 +152,14 @@ async def remove_all(event):
     await event.respond('任务已清空,所有文件已删除', parse_mode='html')
 
 
+async def clear_all(event):
+    # 过滤 已完成或停止
+    tasks = await client.tell_stopped(0, 500)
+    for task in tasks:
+        await client.remove_download_result(task['gid'])
+    await event.respond('完成/停止任务已清空', parse_mode='html')
+
+
 async def unpause_task(event):
     tasks = await client.tell_waiting(0, 50)
     # 筛选send_id对应的任务
@@ -181,7 +193,7 @@ async def remove_task(event):
         file_name = get_file_name(task)
         gid = task['gid']
         buttons.append([Button.inline(file_name, 'del-task.' + gid)])
-    await event.respond('请选择要删除❌ 的任务', parse_mode='html', buttons=buttons)
+    await event.respond('请选择要删除❌的任务', parse_mode='html', buttons=buttons)
 
 
 async def stop_task(event):
@@ -229,14 +241,14 @@ async def waiting(event):
         return
     send_msg = ''
     for task in tasks:
-        completedLength = task['completedLength']
-        totalLength = task['totalLength']
-        downloadSpeed = task['downloadSpeed']
-        fileName = get_file_name(task)
-        prog = progress(int(totalLength), int(completedLength))
-        size = byte2_readable(int(totalLength))
-        speed = hum_convert(int(downloadSpeed))
-        send_msg = send_msg + '任务名称: ' + fileName + '\n进度: ' + prog + '\n大小: ' + size + '\n速度: ' + speed + '\n\n'
+        completed_length = task['completedLength']
+        total_length = task['totalLength']
+        download_speed = task['downloadSpeed']
+        file_name = get_file_name(task)
+        prog = progress(int(total_length), int(completed_length))
+        size = byte2_readable(int(total_length))
+        speed = hum_convert(int(download_speed))
+        send_msg = send_msg + '任务名称: ' + file_name + '\n进度: ' + prog + '\n大小: ' + size + '\n速度: ' + speed + '\n\n'
     await event.respond(send_msg, parse_mode='html')
 
 
@@ -247,14 +259,14 @@ async def stoped(event):
         return
     send_msg = ''
     for task in reversed(tasks):
-        completedLength = task['completedLength']
-        totalLength = task['totalLength']
-        downloadSpeed = task['downloadSpeed']
-        fileName = get_file_name(task)
-        prog = progress(int(totalLength), int(completedLength))
-        size = byte2_readable(int(totalLength))
-        speed = hum_convert(int(downloadSpeed))
-        send_msg = send_msg + '任务名称: ' + fileName + '\n进度: ' + prog + '\n大小: ' + size + '\n速度: ' + speed + '\n\n'
+        completed_length = task['completedLength']
+        total_length = task['totalLength']
+        download_speed = task['downloadSpeed']
+        file_name = get_file_name(task)
+        prog = progress(int(total_length), int(completed_length))
+        size = byte2_readable(int(total_length))
+        speed = hum_convert(int(download_speed))
+        send_msg = send_msg + '任务名称: ' + file_name + '\n进度: ' + prog + '\n大小: ' + size + '\n速度: ' + speed + '\n\n'
     await event.respond(send_msg, parse_mode='html')
 
 
@@ -278,16 +290,17 @@ def get_menu():
     return [
         [
             Button.text('⬇️正在下载', resize=True),
-            Button.text('⌛️ 正在等待', resize=True),
-            Button.text('✅ 已完成/停止', resize=True)
+            Button.text('⌛️正在等待', resize=True),
+            Button.text('✅已完成/停止', resize=True)
         ],
         [
             Button.text('⏸️暂停任务', resize=True),
             Button.text('▶️恢复任务', resize=True),
-            Button.text('❌ 删除任务', resize=True),
+            Button.text('❌删除任务', resize=True),
         ],
         [
-            Button.text('❌ ❌ 清空已完成/停止', resize=True),
+            # Button.text('❌❌清空已完成/停止', resize=True),
+            Button.text('🧹清空已完成/停止', resize=True),
             Button.text('关闭键盘', resize=True),
         ],
     ]

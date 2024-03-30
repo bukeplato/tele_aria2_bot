@@ -10,5 +10,5 @@ PROXY_IP = result['PROXY_IP']
 PROXY_PORT = result['PROXY_PORT']
 ADMIN_ID = result['ADMIN_ID']
 UP_TELEGRAM = result['UP_TELEGRAM']
-RPC_SECRET = result['RPC_SECRET']
+RPC_SECRET = result.get('RPC_SECRET', '')   # 密钥为空时
 RPC_URL = result['RPC_URL']
